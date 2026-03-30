@@ -8,6 +8,7 @@ import SuspensePage from '@/pages/suspense';
 import ItemDetailPage from '@/pages/item';
 import SurveyPage from '@/pages/survey';
 import SurveyResultPage from '@/pages/survey/result';
+import ContractsPage from '@/pages/contracts/page';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -19,6 +20,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route path='/suspense' element={<SuspensePage />} />
         <Route path='/survey' element={<SurveyPage />} />
         <Route path='/survey/result' element={<SurveyResultPage />} />
+        <Route path='/contracts' element={<ContractsPage />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>,
