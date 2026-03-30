@@ -1,16 +1,9 @@
 import { useMemo, useCallback } from 'react';
-import {
-  ContractWithCompanyInfo,
-  CONTRACT_STATE,
-  CONTRACT_STATE_TEXT,
-  DELIVERY_STATUS,
-  isAccountRequired,
-  isContractActive,
-} from '../../types/contract';
-import { addDate, diffDate } from '../../utils';
+import { ContractWithCompanyInfo } from '../../types/contract';
 import { buildStatusTags } from './tagBuilder';
-import { useContractTimer } from './hooks/useContractTimer';
+import { useContractTimer } from './hooks';
 import { ContractCardPresenter } from './ContractCardPresenter';
+import * as contractUtils from './utils';
 
 interface ContractCardProps {
   contract: ContractWithCompanyInfo;
@@ -23,85 +16,29 @@ export const ContractCard = ({
   onNavigate,
   userLevel = 'normal',
 }: ContractCardProps) => {
-  // Timer hook
-  const { minutesDiff, reviewRemain } = useContractTimer(contract);
+  // Hooks
+  const { reviewRemain } = useContractTimer(contract);
 
-  // Basic computed values
-  const company = contract.ad;
-  const mainDate = contract.selectedAt || contract.date0;
+  // Get grouped contract information
+  const state = contractUtils.getContractState(contract);
+  const delivery = contractUtils.getDeliveryInfo(contract);
+  const payment = contractUtils.getPaymentInfo(contract);
 
-  // Memoized computed values
-  const requested = useMemo(() => {
-    return (
-      contract.deliveryHistory &&
-      contract.deliveryHistory.length > 0 &&
-      contract.deliveryHistory[contract.deliveryHistory.length - 1].state ===
-        DELIVERY_STATUS.INFORMATION_MODIFY_REQUEST
-    );
-  }, [contract.deliveryHistory]);
-
-  const isStoreVisitReady = useMemo(() => {
-    return company.category.firstName === 'Store' && contract.currentState === CONTRACT_STATE.SELECTION_COMPLETED;
-  }, [company.category.firstName, contract.currentState]);
-
-  const showPointWithdrawalButton = useMemo(() => {
-    return company.type === 'A' && isAccountRequired(contract);
-  }, [company.type, contract]);
-
-  const showDate = useMemo(() => {
-    return contract.currentState === CONTRACT_STATE.WAITING_FOR_SELECTION ||
-      contract.currentState === CONTRACT_STATE.NOT_SELECTED
-      ? contract.appliedAt || contract.date0
-      : mainDate;
-  }, [contract.currentState, contract.appliedAt, contract.date0, mainDate]);
-
-  const isCancelled = useMemo(() => {
-    return contract.currentState === CONTRACT_STATE.CANCELLED;
-  }, [contract.currentState]);
-
-  const hasPayment = useMemo(() => {
-    return !!contract.payment || !!contract.discount;
-  }, [contract.payment, contract.discount]);
-
-  const isPR = useMemo(() => {
-    return contract.deliveryMethod === 'PR';
-  }, [contract.deliveryMethod]);
-
-  const showTags = useMemo(() => {
-    return contract.currentState !== CONTRACT_STATE.WAITING_FOR_SELECTION;
-  }, [contract.currentState]);
-
-  const revisitRemain = useMemo(() => {
-    return diffDate(addDate(mainDate, company.revisitPeriod), new Date());
-  }, [mainDate, company.revisitPeriod]);
-
-  const showRevisitBadge = useMemo(() => {
-    return (
-      isContractActive(contract.currentState) &&
-      company.available === 0 &&
-      revisitRemain > 0 &&
-      company.type === 'S'
-    );
-  }, [contract.currentState, company.available, company.type, revisitRemain]);
-
-  // Status tags logic
-  const statusTags = useMemo(() => {
-    return buildStatusTags(contract, reviewRemain);
-  }, [contract, reviewRemain]);
-
-  const firstcomeProductText = useMemo(() => {
-    if (requested) return 'Modify product info';
-    if (
-      contract.currentState === CONTRACT_STATE.PURCHASE_COMPLETED &&
-      contract.payPrice !== undefined &&
-      contract.payPrice > 0
-    ) {
-      return 'Purchase Complete';
-    }
-    return CONTRACT_STATE_TEXT[contract.currentState];
-  }, [requested, contract.currentState, contract.payPrice]);
+  // Additional computed values
+  const isStoreVisitReady = contractUtils.isStoreVisitReady(contract);
+  const showPointWithdrawalButton = contractUtils.shouldShowPointWithdrawalButton(contract);
+  const showTags = contractUtils.shouldShowTags(contract);
+  const showDate = contractUtils.getDisplayDate(contract);
+  const revisitInfo = useMemo(() => contractUtils.getRevisitBadgeInfo(contract), [contract]);
+  const statusTags = useMemo(() => buildStatusTags(contract, reviewRemain), [contract, reviewRemain]);
+  const firstcomeProductText = useMemo(
+    () => contractUtils.getFirstcomeProductText(contract, delivery.isModificationRequested),
+    [contract, delivery.isModificationRequested]
+  );
 
   // Event handlers
+  const company = contract.ad;
+
   const handleClick = useCallback(() => {
     if (onNavigate) {
       onNavigate('UsedDetail', {
@@ -132,15 +69,15 @@ export const ContractCard = ({
       contract={contract}
       userLevel={userLevel}
       showDate={showDate}
-      isCancelled={isCancelled}
-      hasPayment={hasPayment}
-      isPR={isPR}
+      isCancelled={state.isCancelled}
+      hasPayment={payment.hasPayment}
+      isPR={delivery.isPR}
       showTags={showTags}
-      showRevisitBadge={showRevisitBadge}
-      revisitRemain={revisitRemain}
+      showRevisitBadge={revisitInfo.shouldShow}
+      revisitRemain={revisitInfo.daysRemaining}
       isStoreVisitReady={isStoreVisitReady}
       showPointWithdrawalButton={showPointWithdrawalButton}
-      requested={!!requested}
+      requested={delivery.isModificationRequested}
       statusTags={statusTags}
       firstcomeProductText={firstcomeProductText}
       onCardClick={handleClick}
