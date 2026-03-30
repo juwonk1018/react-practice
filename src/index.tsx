@@ -6,6 +6,8 @@ import HomePage from '@/pages';
 import FallbackPage from '@/pages/fallback';
 import SuspensePage from '@/pages/suspense';
 import ItemDetailPage from '@/pages/item';
+import SurveyPage from '@/pages/survey';
+import SurveyResultPage from '@/pages/survey/result';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -15,6 +17,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route path='/item/:id' element={<ItemDetailPage />} />
         <Route path='/fallback' element={<FallbackPage />} />
         <Route path='/suspense' element={<SuspensePage />} />
+        <Route path='/survey' element={<SurveyPage />} />
+        <Route path='/survey/result' element={<SurveyResultPage />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>,
